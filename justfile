@@ -1,11 +1,7 @@
-install: install-binary install-action
-
-install-binary:
+install:
     swift build -c release
-    echo "Built .build/release/join-next-meeting"
-    cp .build/release/join-next-meeting ~/.local/bin/join-next-meeting
-    echo "Copied to ~/.local/bin/join-next-meeting"
-
-install-action:
+    echo "Built join-next-meeting"
+    cp .build/release/join-next-meeting "LaunchBar Action/Join Next Meeting.lbaction/Contents/Resources/join-next-meeting"
+    echo "Bundled binary into action"
     cp -r "LaunchBar Action/Join Next Meeting.lbaction" ~/Library/Application\ Support/LaunchBar/Actions/
     echo "Installed Join Next Meeting.lbaction to LaunchBar"
