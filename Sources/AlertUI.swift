@@ -32,14 +32,15 @@ func showMeetingAlert(meeting: MeetingEvent?) {
                 formatDateRange(start: meeting.startDate, end: meeting.endDate),
                 "No meeting link found."
             ].joined(separator: "\n")
-
             alert.addButton(withTitle: "OK")
+            alert.addButton(withTitle: "Cancel")
             alert.runModal()
         }
     } else {
         alert.messageText     = "No Meetings"
         alert.informativeText = "There are no meetings within 1 hour of now."
         alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: "Cancel")
         alert.runModal()
     }
 }
