@@ -50,7 +50,7 @@ func findNextMeeting() async -> MeetingEvent? {
 
     // Prefer the nearest event that has a meeting URL; fall back to nearest overall
     let withURLs = events.filter { firstURL(in: $0) != nil }
-    let nearest = nearestByStart(withURLs) ?? nearestByStart(events)!
+    guard let nearest = nearestByStart(withURLs) ?? nearestByStart(events) else { return nil }
 
     return MeetingEvent(
         title:     nearest.title ?? "Untitled",
@@ -74,9 +74,14 @@ private func firstURL(in event: EKEvent) -> URL? {
     return nil
 }
 
-private let linkDetector = try? NSDataDetector(
-    types: NSTextCheckingResult.CheckingType.link.rawValue
-)
+private let linkDetector: NSDataDetector? = {
+    do {
+        return try NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
+    } catch {
+        assertionFailure("Failed to create NSDataDetector: \(error)")
+        return nil
+    }
+}()
 
 /// Finds the first http/https URL in free text (skipping mailto: etc.)
 private func extractMeetingURL(from text: String) -> URL? {
