@@ -8,23 +8,33 @@ func showMeetingAlert(meeting: MeetingEvent?) {
 
     // Use Calendar.app's own icon
     if let calendarURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.iCal") {
-        alert.icon = NSWorkspace.shared.icon(forFile: calendarURL.path)
+        alert.icon = NSWorkspace.shared.icon(forFile: calendarURL.path(percentEncoded: false))
     }
 
     if let meeting {
-        alert.messageText     = meeting.title
-        alert.informativeText = [
-            meeting.calendarName,
-            formatDateRange(start: meeting.startDate, end: meeting.endDate),
-            meeting.url.absoluteString
-        ].joined(separator: "\n")
+        alert.messageText = meeting.title
 
-        alert.addButton(withTitle: "Join Meeting")
-        alert.addButton(withTitle: "Cancel")
+        if let url = meeting.url {
+            alert.informativeText = [
+                formatDateRange(start: meeting.startDate, end: meeting.endDate),
+                url.absoluteString
+            ].joined(separator: "\n")
 
-        let response = alert.runModal()
-        if response == .alertFirstButtonReturn {
-            NSWorkspace.shared.open(meeting.url)
+            alert.addButton(withTitle: "Join Meeting")
+            alert.addButton(withTitle: "Cancel")
+
+            let response = alert.runModal()
+            if response == .alertFirstButtonReturn {
+                NSWorkspace.shared.open(url)
+            }
+        } else {
+            alert.informativeText = [
+                formatDateRange(start: meeting.startDate, end: meeting.endDate),
+                "No meeting link found."
+            ].joined(separator: "\n")
+
+            alert.addButton(withTitle: "OK")
+            alert.runModal()
         }
     } else {
         alert.messageText     = "No Meetings"

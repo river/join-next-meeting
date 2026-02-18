@@ -3,10 +3,9 @@ import Foundation
 
 struct MeetingEvent {
     let title: String
-    let calendarName: String
     let startDate: Date
     let endDate: Date
-    let url: URL
+    let url: URL?
 }
 
 func findNextMeeting() async -> MeetingEvent? {
@@ -41,47 +40,47 @@ func findNextMeeting() async -> MeetingEvent? {
     let predicate = store.predicateForEvents(withStart: start, end: end, calendars: nil)
     let events = store.events(matching: predicate)
 
-    // Find all events with a URL, then pick the one whose start is nearest to now
-    let candidates = events.compactMap { event -> (EKEvent, URL)? in
-        if let url = firstURL(in: event) {
-            return (event, url)
-        }
-        return nil
+    guard !events.isEmpty else { return nil }
+
+    func nearestByStart(_ candidates: [EKEvent]) -> EKEvent? {
+        candidates.min(by: {
+            abs($0.startDate.timeIntervalSinceNow) < abs($1.startDate.timeIntervalSinceNow)
+        })
     }
 
-    guard !candidates.isEmpty else { return nil }
-
-    let (nearest, url) = candidates.min(by: {
-        abs($0.0.startDate.timeIntervalSinceNow) < abs($1.0.startDate.timeIntervalSinceNow)
-    })!
+    // Prefer the nearest event that has a meeting URL; fall back to nearest overall
+    let withURLs = events.filter { firstURL(in: $0) != nil }
+    let nearest = nearestByStart(withURLs) ?? nearestByStart(events)!
 
     return MeetingEvent(
-        title:        nearest.title ?? "Untitled",
-        calendarName: nearest.calendar?.title ?? "",
-        startDate:    nearest.startDate,
-        endDate:      nearest.endDate,
-        url:          url
+        title:     nearest.title ?? "Untitled",
+        startDate: nearest.startDate,
+        endDate:   nearest.endDate,
+        url:       firstURL(in: nearest)
     )
 }
 
-// Extract the first URL from event.url, then event.notes, then event.location
+// Only accept http/https URLs — rejects mailto: and other schemes
+private func validMeetingURL(_ url: URL?) -> URL? {
+    guard let url, url.scheme == "http" || url.scheme == "https" else { return nil }
+    return url
+}
+
+// Extract the first valid meeting URL from event.url, then location, then notes
 private func firstURL(in event: EKEvent) -> URL? {
-    if let url = event.url {
-        return url
-    }
-    if let notes = event.notes, let url = extractURL(from: notes) {
-        return url
-    }
-    if let location = event.location, let url = extractURL(from: location) {
-        return url
-    }
+    if let url = validMeetingURL(event.url) { return url }
+    if let location = event.location, let url = extractMeetingURL(from: location) { return url }
+    if let notes = event.notes, let url = extractMeetingURL(from: notes) { return url }
     return nil
 }
 
-private func extractURL(from text: String) -> URL? {
-    let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
+private let linkDetector = try? NSDataDetector(
+    types: NSTextCheckingResult.CheckingType.link.rawValue
+)
+
+/// Finds the first http/https URL in free text (skipping mailto: etc.)
+private func extractMeetingURL(from text: String) -> URL? {
     let range = NSRange(text.startIndex..., in: text)
-    let match = detector?.firstMatch(in: text, options: [], range: range)
-    guard let match, let url = match.url else { return nil }
-    return url
+    let matches = linkDetector?.matches(in: text, options: [], range: range) ?? []
+    return matches.compactMap(\.url).first(where: { $0.scheme == "http" || $0.scheme == "https" })
 }
