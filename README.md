@@ -1,44 +1,36 @@
 # Join Next Meeting
 
-A minimal macOS tool that finds the nearest meeting within ±1 hour in any of your calendars and offers to join it.
+A [LaunchBar](https://www.obdev.at/products/launchbar/) action for macOS that finds your next calendar meeting and lets you join it in one keystroke.
 
-## What it does
-
-- Searches all your macOS Calendars for events within 1 hour before or after now
-- Picks the event closest to now that has a URL (checked in order: structured URL field → notes → location)
-- Pops up a native dialog showing the event title, calendar name, and date/time
-- "Join Meeting" opens the URL; "Cancel" dismisses
-
-If no matching event is found, a dialog says so.
-
-## Requirements
-
-- macOS 13+
-- [just](https://github.com/casey/just)
-- Swift toolchain
-- [LaunchBar](https://www.obdev.at/products/launchbar/)
+Trigger it from LaunchBar and a dialog pops up showing the meeting — hit **Join Meeting** to open the link, or **Cancel** to dismiss. If nothing is coming up in the next hour it'll tell you that too.
 
 ## Install
 
-```bash
-just install
-```
+1. Download `Join Next Meeting.lbaction.zip` from [Releases](https://github.com/river/join-next-meeting/releases)
+2. Unzip it
+3. Double-click `Join Next Meeting.lbaction` — LaunchBar will install it automatically
 
-This installs the LaunchBar action to `~/Library/Application Support/LaunchBar/Actions/`.
-
-On first run macOS will prompt for calendar access. After granting it, the dialog appears immediately.
+On first run, macOS will ask for permission to access your calendars. Grant it and you're good to go.
 
 ## Usage
 
-Search for "Join Next Meeting" in LaunchBar to run it — no terminal window opens.
+Open LaunchBar, type **"Join"**, select **Join Next Meeting**, press Return.
 
-## Build
+---
+
+## Building from source
+
+If you'd prefer to build the binary yourself:
 
 ```bash
-swift build -c release
+git clone https://github.com/river/join-next-meeting
+cd join-next-meeting
+just install
 ```
 
-## Reset calendar permission
+This requires Xcode's Swift toolchain and [just](https://github.com/casey/just). It builds the binary, bundles it into the action, and installs it to LaunchBar.
+
+To reset the calendar permission:
 
 ```bash
 tccutil reset Calendar com.local.JoinNextMeeting
