@@ -23,11 +23,13 @@ If no matching event is found, a dialog says so.
 just install
 ```
 
-This builds a release binary and copies it to `~/.local/bin/join-next-meeting`.
+This builds a release binary, copies it to `~/.local/bin/join-next-meeting`, and installs the LaunchBar action.
 
 Make sure `~/.local/bin` is on your `PATH`.
 
 ## Usage
+
+### Command line
 
 ```bash
 join-next-meeting
@@ -40,6 +42,12 @@ To suppress harmless system log noise from EventKit:
 ```bash
 join-next-meeting 2>/dev/null
 ```
+
+### LaunchBar
+
+A LaunchBar action is included in `LaunchBar Action/`. `just install` installs it automatically to `~/Library/Application Support/LaunchBar/Actions/`.
+
+Search for "Join Next Meeting" in LaunchBar to run it — no terminal window opens.
 
 ## Reset calendar permission
 
