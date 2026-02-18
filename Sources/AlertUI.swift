@@ -45,15 +45,17 @@ func showMeetingAlert(meeting: MeetingEvent?) {
 }
 
 private func formatDateRange(start: Date, end: Date) -> String {
-    let dayFormatter = DateFormatter()
-    dayFormatter.dateFormat = "EEE MMM d"
+    let dateFormatter = DateFormatter()
+    dateFormatter.dateStyle = .medium
+    dateFormatter.timeStyle = .none
 
     let timeFormatter = DateFormatter()
-    timeFormatter.dateFormat = "HH:mm"
+    timeFormatter.dateStyle = .none
+    timeFormatter.timeStyle = .short
 
-    let day       = dayFormatter.string(from: start)
+    let day       = dateFormatter.string(from: start)
     let startTime = timeFormatter.string(from: start)
     let endTime   = timeFormatter.string(from: end)
 
-    return "\(day) • \(startTime)–\(endTime)"
+    return "\(day) at \(startTime)–\(endTime)"
 }
