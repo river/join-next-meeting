@@ -33,5 +33,5 @@ This requires Xcode's Swift toolchain and [just](https://github.com/casey/just).
 To reset the calendar permission:
 
 ```bash
-tccutil reset Calendar com.local.JoinNextMeeting
+tccutil reset Calendar com.riverjiang.JoinNextMeeting
 ```

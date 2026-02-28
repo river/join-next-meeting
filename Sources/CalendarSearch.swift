@@ -1,6 +1,12 @@
 import EventKit
 import Foundation
 
+enum MeetingResult {
+    case found(MeetingEvent)
+    case noMeetings
+    case accessDenied
+}
+
 struct MeetingEvent {
     let title: String
     let startDate: Date
@@ -8,7 +14,7 @@ struct MeetingEvent {
     let url: URL?
 }
 
-func findNextMeeting() async -> MeetingEvent? {
+func findNextMeeting() async -> MeetingResult {
     let store = EKEventStore()
 
     // Request calendar access (handles macOS 14+ and earlier)
@@ -28,10 +34,10 @@ func findNextMeeting() async -> MeetingEvent? {
             }
         }
     } catch {
-        return nil
+        return .accessDenied
     }
 
-    guard granted else { return nil }
+    guard granted else { return .accessDenied }
 
     let now = Date()
     let start = now.addingTimeInterval(-3600)
@@ -39,25 +45,32 @@ func findNextMeeting() async -> MeetingEvent? {
 
     let predicate = store.predicateForEvents(withStart: start, end: end, calendars: nil)
     let events = store.events(matching: predicate)
-
-    guard !events.isEmpty else { return nil }
+        .filter { !$0.isAllDay && $0.status != .canceled }
 
     func nearestByStart(_ candidates: [EKEvent]) -> EKEvent? {
-        candidates.min(by: {
-            abs($0.startDate.timeIntervalSinceNow) < abs($1.startDate.timeIntervalSinceNow)
-        })
+        let future = candidates.filter { $0.startDate >= Date() }
+        if let best = future.min(by: { $0.startDate < $1.startDate }) {
+            return best
+        }
+        return candidates.max(by: { $0.startDate < $1.startDate })
     }
 
-    // Prefer the nearest event that has a meeting URL; fall back to nearest overall
-    let withURLs = events.filter { firstURL(in: $0) != nil }
-    guard let nearest = nearestByStart(withURLs) ?? nearestByStart(events) else { return nil }
+    // Pre-compute URLs once per event
+    let urlCache = Dictionary(uniqueKeysWithValues: events.compactMap { event -> (ObjectIdentifier, URL)? in
+        guard let url = firstURL(in: event) else { return nil }
+        return (ObjectIdentifier(event), url)
+    })
 
-    return MeetingEvent(
-        title:     nearest.title ?? "Untitled",
-        startDate: nearest.startDate,
-        endDate:   nearest.endDate,
-        url:       firstURL(in: nearest)
-    )
+    // Prefer the nearest event that has a meeting URL; fall back to nearest overall
+    let withURLs = events.filter { urlCache[ObjectIdentifier($0)] != nil }
+    guard let best = nearestByStart(withURLs) ?? nearestByStart(events) else { return .noMeetings }
+
+    return .found(MeetingEvent(
+        title:     best.title ?? "Untitled",
+        startDate: best.startDate,
+        endDate:   best.endDate,
+        url:       urlCache[ObjectIdentifier(best)]
+    ))
 }
 
 // Only accept http/https URLs — rejects mailto: and other schemes

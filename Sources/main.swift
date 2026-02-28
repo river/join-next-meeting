@@ -6,9 +6,9 @@ app.setActivationPolicy(.accessory)
 
 // Fetch calendar data on a background task, then show UI on main thread
 Task {
-    let meeting = await findNextMeeting()
+    let result = await findNextMeeting()
     await MainActor.run {
-        showMeetingAlert(meeting: meeting)
+        showMeetingAlert(result: result)
         app.stop(nil)
     }
 }
