@@ -1,7 +1,7 @@
 import AppKit
 
 @MainActor
-func showMeetingAlert(meeting: MeetingEvent?) {
+func showMeetingAlert(result: MeetingResult) {
     NSApp.activate(ignoringOtherApps: true)
 
     let alert = NSAlert()
@@ -11,12 +11,16 @@ func showMeetingAlert(meeting: MeetingEvent?) {
         alert.icon = NSWorkspace.shared.icon(forFile: calendarURL.path(percentEncoded: false))
     }
 
-    if let meeting {
+    switch result {
+    case .found(let meeting):
         alert.messageText = meeting.title
+
+        let dateRange = formatDateRange(start: meeting.startDate, end: meeting.endDate)
+        let relative = relativeTime(to: meeting.startDate)
 
         if let url = meeting.url {
             alert.informativeText = [
-                formatDateRange(start: meeting.startDate, end: meeting.endDate),
+                "\(dateRange) \(relative)",
                 url.absoluteString
             ].joined(separator: "\n")
 
@@ -29,19 +33,32 @@ func showMeetingAlert(meeting: MeetingEvent?) {
             }
         } else {
             alert.informativeText = [
-                formatDateRange(start: meeting.startDate, end: meeting.endDate),
+                "\(dateRange) \(relative)",
                 "No meeting link found."
             ].joined(separator: "\n")
             alert.addButton(withTitle: "OK")
             alert.addButton(withTitle: "Cancel")
             alert.runModal()
         }
-    } else {
+
+    case .noMeetings:
         alert.messageText     = "No Meetings"
         alert.informativeText = "There are no meetings within 1 hour of now."
         alert.addButton(withTitle: "OK")
         alert.addButton(withTitle: "Cancel")
         alert.runModal()
+
+    case .accessDenied:
+        alert.messageText     = "Calendar Access Required"
+        alert.informativeText = "Grant calendar access in System Settings > Privacy & Security > Calendars."
+        alert.addButton(withTitle: "Open Settings")
+        alert.addButton(withTitle: "Cancel")
+        let response = alert.runModal()
+        if response == .alertFirstButtonReturn {
+            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Calendars") {
+                NSWorkspace.shared.open(url)
+            }
+        }
     }
 }
 
@@ -59,4 +76,23 @@ private func formatDateRange(start: Date, end: Date) -> String {
     let endTime   = timeFormatter.string(from: end)
 
     return "\(day) at \(startTime)–\(endTime)"
+}
+
+private func relativeTime(to date: Date) -> String {
+    let interval = date.timeIntervalSinceNow
+    let minutes = Int(abs(interval) / 60)
+
+    if minutes < 1 {
+        return "(now)"
+    } else if interval > 0 {
+        if minutes >= 60 {
+            return "(in \(minutes / 60)h \(minutes % 60)m)"
+        }
+        return "(in \(minutes)m)"
+    } else {
+        if minutes >= 60 {
+            return "(\(minutes / 60)h \(minutes % 60)m ago)"
+        }
+        return "(\(minutes)m ago)"
+    }
 }
