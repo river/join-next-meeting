@@ -48,11 +48,9 @@ func findNextMeeting() async -> MeetingResult {
         .filter { !$0.isAllDay && $0.status != .canceled }
 
     func nearestByStart(_ candidates: [EKEvent]) -> EKEvent? {
-        let future = candidates.filter { $0.startDate >= Date() }
-        if let best = future.min(by: { $0.startDate < $1.startDate }) {
-            return best
-        }
-        return candidates.max(by: { $0.startDate < $1.startDate })
+        candidates.min(by: {
+            abs($0.startDate.timeIntervalSinceNow) < abs($1.startDate.timeIntervalSinceNow)
+        })
     }
 
     // Pre-compute URLs once per event
